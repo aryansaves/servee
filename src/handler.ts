@@ -1,6 +1,7 @@
 import { readerFromMemory } from "./server"
 import { type HTTPRes, type HTTPReq, type BodyReader } from "./types"
 import { metrics } from "./metrics"
+import { handleStaticServing } from "./static"
 
  function handleRoot(): HTTPRes {
   const html =  `<!DOCTYPE html>
@@ -56,7 +57,7 @@ function handle404(): HTTPRes {
   }
 }
 
-export async function router(req: HTTPReq, body: BodyReader) : HTTPRes {
+export function router(req: HTTPReq, body: BodyReader) : HTTPRes {
   const uri = req.uri.toString('latin1')
   switch (uri) {
     case '/':
@@ -67,7 +68,9 @@ export async function router(req: HTTPReq, body: BodyReader) : HTTPRes {
       return handleHealth()
     case '/echo':
       return handleEcho(body)
-    default:
-      return handle404()
   }
+  const staticRes = handleStaticServing(req, './public');
+  if (staticRes) return staticRes;
+  
+  return handle404();
 }

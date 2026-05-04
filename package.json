@@ -10,7 +10,9 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "fs": "^0.0.1-security",
     "net": "^1.0.2",
+    "path": "^0.12.7",
     "socket": "^1.1.64"
   }
 }
