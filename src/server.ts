@@ -226,3 +226,167 @@ function readerfromConnLength(conn : TCPconn, buf : Dynbuf, remain : number) : B
   }
 }
 
+function parseHTTPReq(data: Buffer): HTTPReq {
+  // Whole Request Parsing
+  const lines: Buffer[] = splitLines(data)
+  if (lines.length < 2) {
+      throw new HTTPError(400, 'bad request');
+  }
+  const lastLine = lines[lines.length - 1];
+  if (!lastLine || lastLine.length !== 0) {
+      throw new HTTPError(400, 'bad request');
+  }
+
+  const [method, uri, version] = parseRequestLine(lines[0]!)
+  
+  const headers: Buffer[] = []
+  for (let i = 1; i < lines.length - 1; i++) {
+    if (lines[i]!.length === 0) break;
+    const line = lines[i]!
+    const h = Buffer.from(line)
+    if (!validateHeader(h)) {
+      throw new HTTPError(400, 'bad request field');
+    } headers.push(h)
+  }
+  return {
+         method: method,
+         uri: uri,
+         version: version,
+         headers: headers
+     };
+}
+
+async function soWrite(conn: TCPconn, data: Buffer): Promise<void>{
+  return new Promise((resolve, reject) => {
+    if (conn.err) {
+      reject(conn.err)
+      return
+    }
+    try {
+      conn.socket.write(data, (err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    }
+    catch (err) {
+      reject(err)
+    }
+  })
+}
+
+function encodeHTTPResp(res: HTTPRes): Buffer {
+  // create response for the request
+  const statusText = getStatustext(res.code)
+  let lines = [`HTTP/1.1 ${res.code} ${statusText}`]
+  
+    if(res.body.length >= 0){
+    lines.push(`Content-Length: ${res.body.length}`)
+    }
+  for (const h of res.headers) {
+    lines.push(h.toString('latin1'))
+  }
+  lines.push('')
+  lines.push('')
+  
+  return Buffer.from(lines.join('\r\n'))
+}
+
+function getStatustext(code: number): string {
+  switch (code){
+    case 200:
+      return 'OK'
+    case 400:
+      return 'Bad Request'
+    case 404:
+      return 'Not Found'
+    case 413:
+      return 'Payload Too Large'
+    case 501:
+      return 'Not Implemented'
+    default: return 'Unknown'; 
+  }
+}
+
+function soInit(socket: net.Socket) : TCPconn{
+  const conn : TCPconn = {
+    socket: socket,
+    err: null,
+    ended: false,
+    reader : null
+  }
+  socket.on('data', (data: Buffer) => {
+    if (conn.reader) {
+      conn.reader.resolve(data)
+      conn.reader = null
+    }
+  })
+    socket.on('end', () => {
+      conn.ended = true
+      if (conn.reader) {
+        conn.reader.resolve(Buffer.from(''))
+        conn.reader = null
+      }
+    })
+  socket.on('error', (err: Error) => {
+    conn.err = err
+    if (conn.reader) {
+      conn.reader.reject(err)
+      conn.reader = null
+    }
+  })
+  return conn
+}
+
+function splitLines(data: Buffer): Buffer[]{
+  // splits lines using delimiters
+  return data.toString('latin1')
+    .split('\r\n')
+    .map(s => Buffer.from(s))
+}
+
+function parseRequestLine(line: Buffer): [string, Buffer, string] {
+  // method, uri, version parsing
+  const idxm = line.indexOf(' '.charCodeAt(0))
+  const idxu = line.indexOf(' '.charCodeAt(0), idxm + 1)
+  const idxv = line.indexOf(' '.charCodeAt(0), idxu + 1)
+  if (idxm < 0) {
+    throw new HTTPError(400, 'bad request line');
+  }
+  if (idxu < 0) {
+    throw new HTTPError(400, 'bad request line');
+  }
+  if (idxv !== -1) {
+    throw new HTTPError(400, 'bad request line');
+  }
+  const method = line.subarray(0, idxm).toString('latin1')
+  const uri = line.subarray(idxm + 1, idxu)
+  const version = line.subarray(idxu + 1).toString('latin1')
+  
+  if (version !== "HTTP/1.0" && version !== "HTTP/1.1") {
+    throw new HTTPError(400, 'bad request line');
+  }
+  
+  return [method, uri, version]
+}
+
+function validateHeader(header : Buffer) : Boolean {
+  const idx = header.indexOf(':'.charCodeAt(0));
+  if (idx <= 0) return false;  // No colon or empty name
+  
+  // Check for CR or LF anywhere (injection attack)
+  if (header.includes('\r'.charCodeAt(0))) return false;
+  if (header.includes('\n'.charCodeAt(0))) return false;
+  
+  return true;
+}
+
+const server = net.createServer({
+  noDelay : true,
+})
+server.on('connection', (socket: net.Socket) => {
+  newConn(socket)
+})
+const PORT = 1234
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`Server is Listening http://127.0.0.1:${PORT}`)
+})
