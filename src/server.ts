@@ -159,7 +159,8 @@ async function writeHTTPResp(conn: TCPconn, res : HTTPRes) : Promise<void> {
     await soWrite(conn, data)
   }
 }
-// writes the HTTPRes 
+// writes the response by calling soWrite() & passes the return of encodeHTTPResp to soWrite()
+// encodeHTTPResp() returns the actual buffer to use as response
 
 async function newConn(socket : net.Socket) {
   const conn = soInit(socket)

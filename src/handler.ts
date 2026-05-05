@@ -22,7 +22,7 @@ import { handleStaticServing } from "./static"
   </html>`
   return {
     code: 200,
-    headers: [Buffer.from('Content-Type : text/html')],
+    headers: [Buffer.from('Content-Type: text/html')],
     body: readerFromMemory(Buffer.from(html))
   }
 }
@@ -31,14 +31,14 @@ function handleStats(): HTTPRes {
   const jsonstats = JSON.stringify(stats) 
   return {
     code: 200,
-    headers: [Buffer.from('Content-Type : application/json')],
+    headers: [Buffer.from('Content-Type: application/json')],
     body : readerFromMemory(Buffer.from(jsonstats))
   }
 }
 function handleHealth(): HTTPRes {
   return {
     code: 200,
-    headers: [Buffer.from('Content-Type : text/plain')],
+    headers: [Buffer.from('Content-Type: text/plain')],
     body : readerFromMemory(Buffer.from('OK'))
   }
 }
