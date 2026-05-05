@@ -50,7 +50,7 @@ async function serveClient(conn : TCPconn)  {
       }
     continue 
     }
-    const reqBody = readerFromReq(conn, buf, msg)
+    const reqBody =  readerFromReq(conn, buf, msg)
     const res =  router(msg, reqBody)
     metrics.recordRequest(msg.method, res.body.length >= 0 ? res.body.length : 0)
     await writeHTTPResp(conn, res)
@@ -65,7 +65,7 @@ async function serveClient(conn : TCPconn)  {
 }
 // main server loop starts with storing the HTTP req (method, uri, headers, version) in a variable (msg)
 // checks if the message received if not : asynchronously calls for soRead() and bufPush() that pushes data into buffer 
-// gets requests body from readerFromReq, then call for router to check uri and return matching HTTPRes
+// gets requests body from readerFromReq(), then call for router to check uri and return matching HTTPRes
 // pass the response to writeHTTPResp() to send, last loop is for draining, drains the leftover and ensures safety for the next requests
 
 const kMaxHeaderLength = 1024 * 8
@@ -83,6 +83,9 @@ function cutMessage(buf: Dynbuf): HTTPReq | null{
   bufPop(buf, headerlen)
   return msg
 }
+// entire purpose of cutmessage is to return the HTTPReq (request - the body) which it gets from parseHTTPReq() apart from 
+// that it cuts the HTTPReq (the whole request including the body) and seperates the body, gets the HTTPReq (request - the body) 
+// from parseHTTPReq() and clears the buffer after passing it in parseHTTPReq()
 
 async function soRead(conn : TCPconn) : Promise<Buffer>{
   return new Promise((resolve, reject) => {
@@ -99,10 +102,10 @@ async function soRead(conn : TCPconn) : Promise<Buffer>{
     conn.reader = {resolve, reject}
   })
 }
-
+// soRead is written to make serverloop wait for the data to arrive as it is called when no data in the buffer
+// meanwhile checks for errors and all
+ 
 function readerFromReq(conn: TCPconn, buf: Dynbuf, req: HTTPReq): BodyReader {
-  // gets Content-Length and passes it to readerfromConnLength as remain
-  // also checks for Transfer-Encoding
   const method = req.method
   let BodyAllowed = true
   if (method === 'GET' || method === 'HEAD') {
@@ -136,6 +139,9 @@ function readerFromReq(conn: TCPconn, buf: Dynbuf, req: HTTPReq): BodyReader {
     throw new HTTPError(501, "read to EOF")
   }
 }
+// almost does the same as cutMessage(), takes the request checks for method and of transfer encoding
+// checks for Content-Length header if present gets body length
+// call for readerfromConnLength() that returns request in a promise eventually will be used in the echo route
 
 async function writeHTTPResp(conn: TCPconn, res : HTTPRes) : Promise<void> {
 
@@ -153,6 +159,7 @@ async function writeHTTPResp(conn: TCPconn, res : HTTPRes) : Promise<void> {
     await soWrite(conn, data)
   }
 }
+// writes the HTTPRes 
 
 async function newConn(socket : net.Socket) {
   const conn = soInit(socket)
