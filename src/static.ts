@@ -1,7 +1,7 @@
 import type { HTTPReq, HTTPRes } from "./types";
 import fs from 'fs'
 import path from 'path'
-import { readerFromMemory } from "./server";
+import { readerfromfilesstream, readerFromMemory } from "./server";
 export function handleStaticServing(req : HTTPReq, rootDir : string) : HTTPRes | null{
   const uri = req.uri.toString('latin1')
   if (uri.includes('..')) {
@@ -13,13 +13,12 @@ export function handleStaticServing(req : HTTPReq, rootDir : string) : HTTPRes |
           return null; 
   }
   
-  const data = fs.readFileSync(filepath)
   const ext = path.extname(filepath)
   const contentType = lookupContentType(ext)
   return {
     code: 200,
     headers: [Buffer.from(`Content-Type: ${contentType}`)],
-    body : readerFromMemory(data)
+    body : readerfromfilesstream(filepath)
   }
 }
 

@@ -3,7 +3,9 @@ import { router } from "./handler"
 import { metrics } from "./metrics"
 import * as net from 'net'
 import { bufPop, bufPush } from "./buffer"
-
+import fs from "fs"
+import { file } from "bun"
+import { resolveSoa } from "dns/promises"
 class HTTPError extends Error{
   code: number;
   
@@ -33,6 +35,53 @@ export function readerFromMemory(data: Buffer): BodyReader{
 // mainly to maintain the idea that data is read or not
 // if read return eof else return the data
 
+export function readerfromfilesstream(filepath : string) : BodyReader {
+  const fileSize = fs.statSync(filepath).size;
+  const stream = fs.createReadStream(filepath)
+  
+  let waitingResolve : ((chunk : Buffer) => void) | null = null
+  let currentChunk : Buffer | null = null
+  let ended = false
+  
+  stream.on('data', (chunk: Buffer) => {
+    if (waitingResolve) {
+      waitingResolve(chunk)
+      waitingResolve = null
+      stream.pause()
+    } else {
+      currentChunk = chunk
+      stream.pause()
+    }
+  })
+  stream.on('end', () => {
+    ended = true
+    if (waitingResolve) {
+      waitingResolve(Buffer.from(''))
+      waitingResolve = null
+    }
+  })
+  stream.pause()
+  
+  return {
+    length: fileSize,
+    read: async (): Promise<Buffer> => {
+      if (currentChunk) {
+        const data = currentChunk
+        currentChunk = null
+        stream.resume()
+        return data
+      }
+      if (ended) {
+        return Buffer.from('')
+      }
+      return new Promise((resolve) => {
+        waitingResolve = resolve
+        stream.resume()
+      })
+    }
+  }
+}
+// 
 async function serveClient(conn : TCPconn)  {
   const buf : Dynbuf = {data : Buffer.alloc(0), length : 0}
 
@@ -144,19 +193,12 @@ function readerFromReq(conn: TCPconn, buf: Dynbuf, req: HTTPReq): BodyReader {
 // call for readerfromConnLength() that returns request in a promise eventually will be used in the echo route
 
 async function writeHTTPResp(conn: TCPconn, res : HTTPRes) : Promise<void> {
-
-  if (res.body.length < 0) {
-    throw new Error('TODO : chunked encoding')
-  }
-  if (fieldGet(res.headers, 'Content-Length')) {
-    throw new Error("Content-Length is already set")
-  }
   await soWrite(conn, encodeHTTPResp(res)) // for status code and headers
   
   while (true) {
-    const data = await res.body.read()
-    if (data.length === 0) break;
-    await soWrite(conn, data) // bodyReader response
+      const chunk = await res.body.read();
+      if (chunk.length === 0) break;
+      await soWrite(conn, chunk);
   }
 }
 // writes the response to socket 2 times here, first for status code and headers 
