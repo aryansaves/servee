@@ -100,7 +100,7 @@ async function serveClient(conn : TCPconn)  {
     continue 
     }
     const reqBody =  readerFromReq(conn, buf, msg)
-    const res =  router(msg, reqBody)
+    const res = await router(msg, reqBody)
     metrics.recordRequest(msg.method, res.body.length >= 0 ? res.body.length : 0)
     await writeHTTPResp(conn, res)
     if (msg.version === "1.0") {

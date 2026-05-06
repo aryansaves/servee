@@ -2,7 +2,7 @@ import type { HTTPReq, HTTPRes } from "./types";
 import fs from 'fs'
 import path from 'path'
 import { readerfromfilesstream, readerFromMemory } from "./server";
-export function handleStaticServing(req : HTTPReq, rootDir : string) : HTTPRes | null{
+export function handleServing(req : HTTPReq, rootDir : string) : HTTPRes | null{
   const uri = req.uri.toString('latin1')
   if (uri.includes('..')) {
     return null
