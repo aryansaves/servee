@@ -151,16 +151,16 @@ async function writeHTTPResp(conn: TCPconn, res : HTTPRes) : Promise<void> {
   if (fieldGet(res.headers, 'Content-Length')) {
     throw new Error("Content-Length is already set")
   }
-  await soWrite(conn, encodeHTTPResp(res))
+  await soWrite(conn, encodeHTTPResp(res)) // for status code and headers
   
   while (true) {
     const data = await res.body.read()
     if (data.length === 0) break;
-    await soWrite(conn, data)
+    await soWrite(conn, data) // bodyReader response
   }
 }
-// writes the response by calling soWrite() & passes the return of encodeHTTPResp to soWrite()
-// encodeHTTPResp() returns the actual buffer to use as response
+// writes the response to socket 2 times here, first for status code and headers 
+// second time for body, the OS packages both into a TCP segment underneath on both ends
 
 async function newConn(socket : net.Socket) {
   const conn = soInit(socket)
