@@ -1,20 +1,27 @@
 {
-  "name": "server",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
+  "name": "http-server-from-scratch",
+  "version": "1.0.0",
+  "description": "HTTP/1.1 server built from raw TCP sockets in TypeScript",
+  "main": "src/server.ts",
+  "scripts": {
+    "start": "bun src/server.ts",
+    "dev": "DEBUG=true bun src/server.ts",
+    "benchmark": "autocannon -c 100 -d 10 http://127.0.0.1:1234/"
   },
-  "peerDependencies": {
-    "typescript": "^5"
+  "keywords": [
+    "http",
+    "server",
+    "typescript",
+    "tcp",
+    "from-scratch"
+  ],
+  "author": "aryansaves",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0"
   },
   "dependencies": {
     "autocannon": "^8.0.0",
-    "express": "^5.2.1",
-    "fs": "^0.0.1-security",
-    "net": "^1.0.2",
-    "path": "^0.12.7",
-    "socket": "^1.1.64"
+    "express": "^5.2.1"
   }
 }

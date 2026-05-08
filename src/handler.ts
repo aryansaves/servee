@@ -30,7 +30,7 @@ function handleRoot(): HTTPRes {
 }
 function handleStats(): HTTPRes {
   const stats = metrics.getStats()
-  const jsonstats = JSON.stringify(stats) 
+  const jsonstats = JSON.stringify(stats, null, 2) 
   return {
     code: 200,
     headers: [Buffer.from('Content-Type: application/json')],
@@ -106,7 +106,7 @@ async function handleBenchmark(): Promise<HTTPRes> {
     };
 }
 
-export async function router(req: HTTPReq, body: BodyReader) : HTTPRes {
+export async function router(req: HTTPReq, body: BodyReader) : Promise <HTTPRes> {
   const uri = req.uri.toString('latin1')
   switch (uri) {
     case '/':

@@ -4,8 +4,16 @@ import { metrics } from "./metrics"
 import * as net from 'net'
 import { bufPop, bufPush } from "./buffer"
 import fs from "fs"
-import { file } from "bun"
-import { resolveSoa } from "dns/promises"
+
+const DEBUG = process.env.DEBUG === 'true';
+
+function log(...args: any[]): void {
+    if (!DEBUG) return;
+    
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+    console.log(`[${timestamp}]`, ...args);
+}
+
 class HTTPError extends Error{
   code: number;
   
@@ -81,7 +89,7 @@ export function readerfromfilesstream(filepath : string) : BodyReader {
     }
   }
 }
-// 
+
 async function serveClient(conn : TCPconn)  {
   const buf : Dynbuf = {data : Buffer.alloc(0), length : 0}
 
@@ -102,6 +110,7 @@ async function serveClient(conn : TCPconn)  {
     const reqBody =  readerFromReq(conn, buf, msg)
     const res = await router(msg, reqBody)
     metrics.recordRequest(msg.method, res.body.length >= 0 ? res.body.length : 0)
+    log(`${msg.method} ${msg.uri.toString()} → ${res.code} ${res.body.length >= 0 ? res.body.length + 'B' : 'chunked'}`);
     await writeHTTPResp(conn, res)
     if (msg.version === "1.0") {
       return
@@ -206,11 +215,13 @@ async function writeHTTPResp(conn: TCPconn, res : HTTPRes) : Promise<void> {
 
 async function newConn(socket : net.Socket) {
   const conn = soInit(socket)
+  log(`Client connected from ${socket.remoteAddress}:${socket.remotePort}`);
   try {
     await serveClient(conn)
+    log('Client disconnected cleanly');
   } catch (exc) {
     if (exc instanceof HTTPError) {
-      console.error('HTTP error:', exc)
+      log(`HTTP Error ${exc.code}: ${exc.message}`);
     
       const errorResp = {
         code: exc.code,
@@ -224,7 +235,7 @@ async function newConn(socket : net.Socket) {
         
       }
     } else {
-      console.error('Unexpected exception', exc)
+      log('Unexpected error:', exc);
     }
   }
     finally {
@@ -438,5 +449,6 @@ server.on('connection', (socket: net.Socket) => {
 })
 const PORT = 1234
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`Server is Listening http://127.0.0.1:${PORT}`)
+  log(`Server listening on http://127.0.0.1:${PORT}`);
+      console.log(`Server ready: http://127.0.0.1:${PORT}`);
 })
