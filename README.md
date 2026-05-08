@@ -17,23 +17,6 @@ Just Node's `net.Socket` and Buffer management. Everything else
 request parsing, header validation, body streaming, routing — I wrote myself.
 
 
-## Architecture
-┌─────────────┐     ┌──────────┐     ┌─────────────┐     ┌────────┐
-│  net.Socket │────→│  soRead  │────→│   DynBuf    │────→│cutMessage│
-│  (TCP conn) │     │(async)   │     │ (exponential│     │(find \r\n\r\n)
-└─────────────┘     └──────────┘     │   growth)   │     └────────┘
-└─────────────┘          │
-↓
-┌─────────────┐     ┌──────────┐     ┌─────────────┐     ┌────────┐
-│  net.Socket │←────│ soWrite  │←────│ encodeHTTPResp│←──│ router │
-│  (response) │     │(async)   │     │(status+headers)│  └────────┘
-└─────────────┘     └──────────┘     └─────────────┘          ↑
-┌─────────────┐          │
-│  BodyReader │←─────────┘
-│  (streaming)│    (handler returns
-└─────────────┘     HTTPRes with body)
-
-
 **The server loop (`serveClient`):**
 
 1. **Buffer data** from socket into `DynBuf` until `\r\n\r\n` found
@@ -85,7 +68,7 @@ body: readerFromMemory(fs.readFileSync(filepath))  // 1GB = 1GB RAM
 
 // After: streams chunks
 body: readerFromFileStream(filepath)  // ~64KB at a time
-
+```
 
 ## Quick Start
 
