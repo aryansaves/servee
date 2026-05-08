@@ -1,7 +1,7 @@
 import type { HTTPReq, HTTPRes } from "./types";
 import fs from 'fs'
 import path from 'path'
-import { readerfromfilesstream } from "./server";
+import { readerFromFilesStream } from "./server";
 export function handleServing(req : HTTPReq, rootDir : string) : HTTPRes | null{
   const uri = req.uri.toString('latin1')
   if (uri.includes('..')) {
@@ -18,7 +18,7 @@ export function handleServing(req : HTTPReq, rootDir : string) : HTTPRes | null{
   return {
     code: 200,
     headers: [Buffer.from(`Content-Type: ${contentType}`)],
-    body : readerfromfilesstream(filepath)
+    body : readerFromFilesStream(filepath)
   }
 }
 

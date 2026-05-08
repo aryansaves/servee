@@ -11,7 +11,7 @@ function handleRoot(): HTTPRes {
   <head><title>HTTP Server From Scratch</title></head>
   <body>
       <h1>HTTP Server From Scratch</h1>
-      <p>A pedagogical HTTP/1.1 implementation with zero dependencies.</p>
+      <p>A HTTP/1.1 implementation with zero dependencies.</p>
       
       <h2>Available Endpoints</h2>
       <ul>

@@ -43,7 +43,7 @@ export function readerFromMemory(data: Buffer): BodyReader{
 // mainly to maintain the idea that data is read or not
 // if read return eof else return the data
 
-export function readerfromfilesstream(filepath : string) : BodyReader {
+export function readerFromFilesStream(filepath : string) : BodyReader {
   const fileSize = fs.statSync(filepath).size;
   const stream = fs.createReadStream(filepath)
   
@@ -109,16 +109,18 @@ async function serveClient(conn : TCPconn)  {
     }
     const reqBody =  readerFromReq(conn, buf, msg)
     const res = await router(msg, reqBody)
-    metrics.recordRequest(msg.method, res.body.length >= 0 ? res.body.length : 0)
     log(`${msg.method} ${msg.uri.toString()} → ${res.code} ${res.body.length >= 0 ? res.body.length + 'B' : 'chunked'}`);
     await writeHTTPResp(conn, res)
     if (msg.version === "1.0") {
       return
     }
+    let requestBodySize = 0;
     while (true) {
       const chunk = await reqBody.read()
       if (chunk.length === 0) break; 
+      requestBodySize += chunk.length;
     }
+    metrics.recordRequest(msg.method, requestBodySize, res.body.length >= 0 ? res.body.length : 0)
   }
 }
 // main server loop starts with storing the HTTP req (method, uri, headers, version) in a variable (msg)

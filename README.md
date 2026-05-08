@@ -61,6 +61,7 @@ Local development machine (AMD Ryzen 5, 16GB RAM, plugged in):
 ![stats](./screenshots/stats.png)
 
 ---
+Not exactly a replacement for Express, a demonstration that HTTP/1.1 is simpler than it looks, and that overhead accumulates in frameworks
 
 ## Deep Dive: True File Streaming
 
@@ -82,7 +83,7 @@ body: readerFromFileStream(filepath)  // ~64KB at a time
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/aryansaves/http-server.git
+git clone https://github.com/aryansaves/servee.git
 cd http-server
 
 # 2. Install Bun (if you don't have it)

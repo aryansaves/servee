@@ -5,9 +5,10 @@ const metrics = {
   bytesWritten: 0,
   startTime: Date.now(),
   
-  recordRequest(method: string, bytesOut: number) {
+  recordRequest(method: string, bytesIn: number, bytesOut: number) {
     this.requestsTotal++;
     this.requestsByMethod[method] = (this.requestsByMethod[method] || 0) + 1;
+    this.bytesRead += bytesIn; 
     this.bytesWritten += bytesOut;
   },
   
