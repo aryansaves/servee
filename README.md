@@ -51,7 +51,7 @@ Local development machine (AMD Ryzen 5, 16GB RAM, plugged in):
 | Server | Requests/sec | Avg Latency |
 |--------|-------------|-------------|
 | **My implementation** | **29347.64** | **2.96ms** |
-| Express 4.x | 16,306.19 | 5.51ms |
+| Express 5.2.1 | 16,306.19 | 5.51ms |
 
 
 ## Deep Dive: True File Streaming
@@ -90,7 +90,7 @@ curl http://localhost:1234/health
 
 # 5. Run benchmark
 curl http://localhost:1234/benchmark
-
+```
 ## License
 
 MIT — see [LICENSE](./LICENSE)
