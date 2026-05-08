@@ -53,11 +53,14 @@ Local development machine (AMD Ryzen 5, 16GB RAM, plugged in):
 | **My implementation** | **29347.64** | **2.96ms** |
 | Express 5.2.1 | 16,306.19 | 5.51ms |
 
---
+---
+![benchmarks](./screenshots/Benchmarks.png)
 
-`![benchmarks](./screenshots/Benchmarks.png)`
+---
 
-`![stats](./screenshots/stats.png)`
+![stats](./screenshots/stats.png)
+
+---
 
 ## Deep Dive: True File Streaming
 
