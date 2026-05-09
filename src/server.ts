@@ -4,7 +4,6 @@ import { metrics } from "./metrics"
 import * as net from 'net'
 import { bufPop, bufPush } from "./buffer"
 import fs from "fs"
-
 const DEBUG = process.env.DEBUG === 'true';
 
 function log(...args: any[]): void {
@@ -51,13 +50,14 @@ export function readerFromFilesStream(filepath : string) : BodyReader {
   let currentChunk : Buffer | null = null
   let ended = false
   
-  stream.on('data', (chunk: Buffer) => {
+  stream.on('data', (chunk: Buffer | string) => {
+    const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     if (waitingResolve) {
-      waitingResolve(chunk)
+      waitingResolve(data)
       waitingResolve = null
       stream.pause()
     } else {
-      currentChunk = chunk
+      currentChunk = data
       stream.pause()
     }
   })
@@ -191,7 +191,7 @@ function readerFromReq(conn: TCPconn, buf: Dynbuf, req: HTTPReq): BodyReader {
     bodyLen = 0
   }
   if (bodyLen >= 0) {
-    return readerfromConnLength(conn, buf, bodyLen)
+    return readerFromConnLength(conn, buf, bodyLen)
   } else if (chunked) {
     throw new HTTPError(501, "Chunked Encoding")
   }
@@ -201,7 +201,7 @@ function readerFromReq(conn: TCPconn, buf: Dynbuf, req: HTTPReq): BodyReader {
 }
 // almost does the same as cutMessage(), takes the request checks for method and of transfer encoding
 // checks for Content-Length header if present gets body length
-// call for readerfromConnLength() that returns request in a promise eventually will be used in the echo route
+// call for readerFromConnLength() that returns request in a promise eventually will be used in the echo route
 
 async function writeHTTPResp(conn: TCPconn, res : HTTPRes) : Promise<void> {
   await soWrite(conn, encodeHTTPResp(res)) // for status code and headers
@@ -262,7 +262,7 @@ function fieldGet(headers: Buffer[], key: string): Buffer | null {
   } return null
 }
 
-function readerfromConnLength(conn : TCPconn, buf : Dynbuf, remain : number) : BodyReader {
+function readerFromConnLength(conn : TCPconn, buf : Dynbuf, remain : number) : BodyReader {
   const totalLength = remain
   
   return {
@@ -400,14 +400,20 @@ function soInit(socket: net.Socket) : TCPconn{
   return conn
 }
 
-function splitLines(data: Buffer): Buffer[]{
-  // splits lines using delimiters
-  return data.toString('latin1')
+export function splitLines(data: Buffer): Buffer[] {
+  const content = data.toString('latin1');
+  if (!content) return [];
+
+  return content
     .split('\r\n')
-    .map(s => Buffer.from(s))
+    .filter((line, index, array) => {
+      // Exclude the last element if it is an empty string resulting from a trailing \r\n
+      return !(index === array.length - 1 && line === '');
+    })
+    .map(s => Buffer.from(s));
 }
 
-function parseRequestLine(line: Buffer): [string, Buffer, string] {
+export function parseRequestLine(line: Buffer): [string, Buffer, string] {
   // method, uri, version parsing
   const idxm = line.indexOf(' '.charCodeAt(0))
   const idxu = line.indexOf(' '.charCodeAt(0), idxm + 1)
@@ -432,7 +438,7 @@ function parseRequestLine(line: Buffer): [string, Buffer, string] {
   return [method, uri, version]
 }
 
-function validateHeader(header : Buffer) : Boolean {
+export function validateHeader(header : Buffer) : Boolean {
   const idx = header.indexOf(':'.charCodeAt(0));
   if (idx <= 0) return false;  // No colon or empty name
   
@@ -449,7 +455,7 @@ const server = net.createServer({
 server.on('connection', (socket: net.Socket) => {
   newConn(socket)
 })
-const PORT = 1234
+const PORT = parseInt(process.env.PORT || '1234')
 server.listen(PORT, '127.0.0.1', () => {
   log(`Server listening on http://127.0.0.1:${PORT}`);
       console.log(`Server ready: http://127.0.0.1:${PORT}`);

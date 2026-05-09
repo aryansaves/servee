@@ -1,7 +1,7 @@
-# HTTP/1.1 Server From Scratch — TypeScript
+# HTTP/1.1 Server From Scratch  {TypeScript}
 
-&gt; Zero dependencies. Raw TCP sockets. Manual HTTP parsing. 
-&gt; Because I wanted to know what `app.get()` actually does.
+> Zero dependencies. Raw TCP sockets. Manual HTTP parsing. 
+> Because I wanted to know what `app.get()` actually does.
 
 
 ## Why I Built This

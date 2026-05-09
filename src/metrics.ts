@@ -20,7 +20,8 @@ const metrics = {
       requestsTotal: this.requestsTotal,
       requestsByMethod: this.requestsByMethod,
       requestsPerSecond: (this.requestsTotal / (uptime / 1000)).toFixed(2),
-      bytesWritten: this.bytesWritten
+      bytesWritten: this.bytesWritten,
+      bytesRead : this.bytesRead
     };
   }
 }
