@@ -41,7 +41,7 @@ request parsing, header validation, body streaming, routing — I wrote myself.
 | Health check                  | Done        | /health endpoint                                            |
 | Echo endpoint                 | Done        | /echo mirrors request body                                  |
 | Performance benchmark         | Done        | /benchmark vs Express using autocannon                      |
-
+| Tests                         | Done        | Unit tests for parser/buffer, integration tests for full server |
 
 ---
 ## Performance
@@ -92,13 +92,17 @@ curl -fsSL https://bun.sh/install | bash
 # 3. Start the server
 bun src/server.ts
 
-# 4. Test it (in another terminal)
+# 4. Test it
+bun test
+
+# 5. Run benchmark
+curl http://localhost:1234/benchmark
+
+# 6. Available Endpoints 
 curl http://localhost:1234/
 curl http://localhost:1234/stats
 curl http://localhost:1234/health
 
-# 5. Run benchmark
-curl http://localhost:1234/benchmark
 ```
 ## License
 
